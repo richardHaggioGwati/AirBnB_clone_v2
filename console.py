@@ -112,32 +112,45 @@ class HBNBCommand(cmd.Cmd):
         """ Overrides the emptyline method of CMD """
         pass
 
-    def do_create(self, args):
-        """ Create an object of any class with parameters """
-        args = args.split()  # Split the arguments into a list
+    def do_create(self, line):
+        """Create a new instance with parameters"""
+        try:
+            if not line:
+                raise SyntaxError("** class name missing **")
 
-        if not args:
-            print("** class name missing **")
-            return
-        elif args[0] not in HBNBCommand.classes:
-            print("** class doesn't exist **")
-            return
+            class_name, *params = line.split()
 
-        class_name = args[0]
-        param_dict = {}
+            if class_name not in HBNBCommand.classes:
+                raise NameError("** class doesn't exist **")
 
-        # Parse the remaining arguments into parameter key-value pairs
-        for param in args[1:]:
-            if '=' in param:
-                key, value = param.split('=')
-                param_dict[key] = value
+            obj = HBNBCommand.classes[class_name]()
 
-        # Create an instance of the specified class with parameters
-        new_instance = HBNBCommand.classes[class_name](**param_dict)
+            for param in params:
+                key_value = self.parse_key_value(param)
+                if key_value:
+                    key, value = key_value
+                    setattr(obj, key, value)
 
-        storage.save()
-        print(new_instance.id)
-        storage.save()
+            obj.save()
+            print("{}".format(obj.id))
+        except SyntaxError as e:
+            print(e)
+        except NameError as e:
+            print(e)
+
+    def parse_key_value(self, arg):
+        """Parse a parameter in the format 'key=value'"""
+        if '=' not in arg:
+            return None
+
+        key, value = arg.split('=')
+        try:
+            value = eval(value)
+            if isinstance(value, str):
+                value = value.replace("_", " ")
+            return key, value
+        except Exception:
+            return None
 
     def help_create(self):
         """ Help information for the create method """
